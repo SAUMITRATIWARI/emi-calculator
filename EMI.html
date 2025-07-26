@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Personal Loan EMI Calculator</title>
+
+  <!-- Bootstrap 5.3 CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+
+  <!-- Chart.js and Plugin for Labels -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+  <style>
+    input[type="range"] {
+      width: 90%;
+    }
+    #emiChart {
+      max-width: 400px;
+      margin: auto;
+    }
+  </style>
+</head>
+<body class="container-fluid bg-secondary text-white">
+
+  <div class="bg-light text-dark p-4 m-4 rounded shadow">
+    <div class="h3 text-center mb-4">Personal Loan EMI Calculator</div>
+
+    <!-- Inputs -->
+    <div class="row g-4">
+      <div class="col">
+        Amount you need (₹)
+        <input type="text" id="txtAmount" class="form-control" />
+        <input onchange="AmountChange()" type="range" min="100000" max="500000" value="100000" id="rangeAmount" />
+        <div class="d-flex justify-content-between"><span>₹100,000</span><span>₹500,000</span></div>
+      </div>
+
+      <div class="col">
+        For (Years)
+        <input type="number" min="1" max="5" value="1" id="txtYears" class="form-control" />
+        <input onchange="YearChange()" type="range" min="1" max="5" value="1" id="rangeYear" />
+        <div class="d-flex justify-content-between"><span>1</span><span>5</span></div>
+      </div>
+
+      <div class="col">
+        Interest Rate (%)
+        <input type="number" min="10.45" max="18.45" value="10.45" step="0.01" id="txtRate" class="form-control" />
+        <input onchange="RateChange()" type="range" min="10.45" max="18.45" value="10.45" step="0.01" id="rangeRate" />
+        <div class="d-flex justify-content-between"><span>10.45%</span><span>18.45%</span></div>
+      </div>
+    </div>
+
+    <!-- Calculate Button -->
+    <div class="text-end my-4">
+      <button class="btn btn-primary px-4" onclick="calculateEMI()">Calculate</button>
+    </div>
+
+    <!-- Results -->
+    <div id="lblResult" class="fs-4 text-center fw-bold mb-3"></div>
+    <div class="row text-center">
+      <div class="col"><strong>Principal:</strong> ₹<span id="lblPrincipal">0</span></div>
+      <div class="col"><strong>Interest:</strong> ₹<span id="lblInterest">0</span></div>
+      <div class="col"><strong>Total Payment:</strong> ₹<span id="lblTotal">0</span></div>
+    </div>
+
+    <!-- Pie Chart -->
+    <div class="mt-5">
+      <canvas id="emiChart"></canvas>
+    </div>
+  </div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    let chart = null;
+
+    function AmountChange() {
+      document.getElementById("txtAmount").value = document.getElementById("rangeAmount").value;
+    }
+
+    function YearChange() {
+      document.getElementById("txtYears").value = document.getElementById("rangeYear").value;
+    }
+
+    function RateChange() {
+      document.getElementById("txtRate").value = document.getElementById("rangeRate").value;
+    }
+
+    function calculateEMI() {
+      const principal = parseFloat(document.getElementById("txtAmount").value);
+      const years = parseInt(document.getElementById("txtYears").value);
+      const annualRate = parseFloat(document.getElementById("txtRate").value);
+
+      const monthlyRate = annualRate / 12 / 100;
+      const months = years * 12;
+
+      const emi = (principal * monthlyRate * Math.pow(1 + monthlyRate, months)) /
+                  (Math.pow(1 + monthlyRate, months) - 1);
+
+      const totalPayment = emi * months;
+      const interest = totalPayment - principal;
+
+      document.getElementById("lblResult").innerHTML = `Your Monthly EMI is <span class="text-primary">₹ ${emi.toFixed(2)}</span>`;
+      document.getElementById("lblPrincipal").innerText = principal.toFixed(2);
+      document.getElementById("lblInterest").innerText = interest.toFixed(2);
+      document.getElementById("lblTotal").innerText = totalPayment.toFixed(2);
+
+      drawPieChart(principal, interest);
+    }
+
+    function drawPieChart(principal, interest) {
+      const total = principal + interest;
+      const ctx = document.getElementById('emiChart').getContext('2d');
+
+      if (chart) chart.destroy();
+
+      chart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['Principal', 'Interest'],
+          datasets: [{
+            data: [principal, interest],
+            backgroundColor: ['#0d6efd', '#ffc107'],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom' },
+            title: { display: true, text: 'Loan Breakdown' },
+            datalabels: {
+              color: '#000',
+              formatter: (value, ctx) => {
+                const percentage = (value / total * 100).toFixed(1);
+                return `${percentage}%`;
+              },
+              font: {
+                weight: 'bold',
+                size: 14
+              }
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
+      });
+    }
+  </script>
+</body>
+</html>
